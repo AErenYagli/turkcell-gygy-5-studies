@@ -12,10 +12,11 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -29,20 +30,30 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.turkcell.libraryapp.ui.viewmodel.AuthState
 import com.turkcell.libraryapp.ui.viewmodel.AuthViewModel
+import io.github.jan.supabase.auth.Auth
 
+
+// TODO: Kayıt ol sayfası tasarlamak.
 @Composable
 fun LoginScreen(
-    onNavigateToRegister: () -> Unit = {}
+    onNavigateToRegister: () -> Unit,
+    onLoginSuccess: (role:String) -> Unit,
+    authViewModel: AuthViewModel
 ) {
-
-    //LaunchedEffect() { }
-
-    val authViewModel: AuthViewModel = viewModel() // Navigasyon ekranına taşı.
     val authState by authViewModel.authState.collectAsState()
-
-
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
+
+
+    // Yalnızca authState değişirse çalış, tüm recompositionlarda değil..
+    LaunchedEffect(authState) {
+        if(authState is AuthState.Success)
+        {
+            onLoginSuccess((authState as AuthState.Success).role)
+            authViewModel.resetState()
+        }
+    }
+
 
     Column(
         modifier = Modifier.fillMaxSize().padding(24.dp),
@@ -52,7 +63,6 @@ fun LoginScreen(
         Text("Kütüphane Sistemi")
         Spacer(modifier =  Modifier.height(8.dp))
         Text("Giriş Yap")
-
         OutlinedTextField(
             enabled = authState !is AuthState.Loading,
             modifier = Modifier.fillMaxWidth(),
@@ -63,7 +73,6 @@ fun LoginScreen(
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email)
         )
         Spacer(modifier = Modifier.height(10.dp))
-
         OutlinedTextField(
             enabled = authState !is AuthState.Loading,
             modifier = Modifier.fillMaxWidth(),
@@ -79,27 +88,22 @@ fun LoginScreen(
         if(authState is AuthState.Loading)
         {
             Button(onClick = {}, modifier = Modifier.fillMaxWidth()) {
-                CircularProgressIndicator(
-                    modifier=Modifier.size(20.dp),
+                CircularProgressIndicator(modifier=Modifier.size(20.dp),
                     strokeWidth = 2.dp,
                     color = MaterialTheme.colorScheme.onPrimary)
             }
         }else {
-            Button(
-                onClick = { authViewModel.signIn(email, password) },
-                modifier = Modifier.fillMaxWidth()
-            ) {
+            Button(onClick = {
+                authViewModel.signIn(email, password)
+            }, modifier = Modifier.fillMaxWidth()) {
                 Text("Giriş Yap")
             }
         }
-        Spacer(modifier = Modifier.height(8.dp))
 
-        OutlinedButton(
-            onClick = onNavigateToRegister,
-            modifier = Modifier.fillMaxWidth(),
-            enabled = authState !is AuthState.Loading
-        ) {
-            Text("Hesabın yok mu? Kayıt Ol")
+        TextButton(onClick = {
+            onNavigateToRegister()
+        },) {
+            Text("Hesabınız yok mu? Kayıt Ol")
         }
 
 

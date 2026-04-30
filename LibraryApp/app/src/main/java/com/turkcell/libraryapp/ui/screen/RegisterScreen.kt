@@ -1,144 +1,124 @@
 package com.turkcell.libraryapp.ui.screen
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.Button
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.turkcell.libraryapp.ui.viewmodel.AuthState
 import com.turkcell.libraryapp.ui.viewmodel.AuthViewModel
 
 @Composable
 fun RegisterScreen(
-    onRegisterSuccess: () -> Unit
+    onNavigateToLogin: () -> Unit,
+    authViewModel: AuthViewModel
 ) {
-    val authViewModel: AuthViewModel = viewModel()
+    val authViewModel: AuthViewModel = viewModel() // Navigasyon ekranına taşı.
     val authState by authViewModel.authState.collectAsState()
-
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
-    var confirmPassword by remember { mutableStateOf("") }
-    var passwordMismatchError by remember { mutableStateOf(false) }
+    var fullName by remember { mutableStateOf("") }
+    var studentNo by remember { mutableStateOf("") }
 
-    LaunchedEffect(authState) {
-        if (authState is AuthState.Success) {
-            onRegisterSuccess()
-        }
-    }
 
     Column(
-        modifier = Modifier.fillMaxSize().padding(24.dp),
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        Text("Kütüphane Sistemi")
-        Spacer(modifier = Modifier.height(8.dp))
-        Text("Kayıt Ol")
-        Spacer(modifier = Modifier.height(16.dp))
+        Text(
+            text = "Kayıt Ol",
+            fontSize = 26.sp,
+            fontWeight = FontWeight.Bold
+        )
+        Spacer(modifier = Modifier.height(32.dp))
 
         OutlinedTextField(
-            enabled = authState !is AuthState.Loading,
+            value = fullName,
+            onValueChange = { fullName = it },
+            label = { Text("Ad Soyad") },
             modifier = Modifier.fillMaxWidth(),
+            singleLine = true
+        )
+        Spacer(modifier = Modifier.height(12.dp))
+
+        OutlinedTextField(
             value = email,
+            onValueChange = { email = it },
             label = { Text("E-posta") },
-            onValueChange = { value -> email = value },
-            singleLine = true,
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email)
+            modifier = Modifier.fillMaxWidth(),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+            singleLine = true
         )
-        Spacer(modifier = Modifier.height(10.dp))
+        Spacer(modifier = Modifier.height(12.dp))
 
         OutlinedTextField(
-            enabled = authState !is AuthState.Loading,
-            modifier = Modifier.fillMaxWidth(),
             value = password,
+            onValueChange = { password = it },
             label = { Text("Şifre") },
-            onValueChange = { value ->
-                password = value
-                passwordMismatchError = false
-            },
-            singleLine = true,
+            modifier = Modifier.fillMaxWidth(),
+            visualTransformation = PasswordVisualTransformation(),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-            visualTransformation = PasswordVisualTransformation()
+            singleLine = true
         )
-        Spacer(modifier = Modifier.height(10.dp))
+        Spacer(modifier = Modifier.height(12.dp))
 
         OutlinedTextField(
-            enabled = authState !is AuthState.Loading,
+            value = studentNo,
+            onValueChange = { studentNo = it },
+            label = { Text("Öğrenci No (opsiyonel)") },
             modifier = Modifier.fillMaxWidth(),
-            value = confirmPassword,
-            label = { Text("Şifre Tekrar") },
-            onValueChange = { value ->
-                confirmPassword = value
-                passwordMismatchError = false
-            },
-            singleLine = true,
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-            visualTransformation = PasswordVisualTransformation(),
-            isError = passwordMismatchError
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            singleLine = true
         )
+        Spacer(modifier = Modifier.height(24.dp))
 
-        if (passwordMismatchError) {
-            Spacer(modifier = Modifier.height(4.dp))
+        if (authState is AuthState.Error) {
             Text(
-                text = "Şifreler eşleşmiyor",
+                text = (authState as AuthState.Error).message,
                 color = MaterialTheme.colorScheme.error,
-                style = MaterialTheme.typography.bodySmall
+                modifier = Modifier.padding(bottom = 12.dp)
             )
         }
 
-        Spacer(modifier = Modifier.height(10.dp))
-
-        if (authState is AuthState.Loading) {
-            Button(onClick = {}, modifier = Modifier.fillMaxWidth()) {
+        Button(
+            onClick = {
+                authViewModel.signUp(
+                    email = email.trim(),
+                    password = password,
+                    fullName = fullName.trim(),
+                    studentNo = studentNo.trim().ifEmpty { null }
+                )
+            },
+            modifier = Modifier.fillMaxWidth(),
+            enabled = authState !is AuthState.Loading
+        ) {
+            if (authState is AuthState.Loading) {
                 CircularProgressIndicator(
                     modifier = Modifier.size(20.dp),
                     strokeWidth = 2.dp,
                     color = MaterialTheme.colorScheme.onPrimary
                 )
-            }
-        } else {
-            Button(
-                onClick = {
-                    if (password != confirmPassword) {
-                        passwordMismatchError = true
-                    } else {
-                        authViewModel.signUp(email, password)
-                    }
-                },
-                modifier = Modifier.fillMaxWidth()
-            ) {
+            } else {
                 Text("Kayıt Ol")
             }
         }
+        Spacer(modifier = Modifier.height(12.dp))
 
-        if (authState is AuthState.Error) {
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = (authState as AuthState.Error).message,
-                color = MaterialTheme.colorScheme.error
-            )
+        TextButton(onClick = {}) {
+            Text("Zaten hesabın var mı? Giriş Yap")
         }
     }
 }
