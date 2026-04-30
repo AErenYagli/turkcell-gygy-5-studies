@@ -22,4 +22,41 @@ class BookRepository {
     }
 
     // ÖDEV 2: BookRepository Güncelleme, silme, arama fonksiyonlarını tanımla.
-}
+    suspend fun updateBook(book: Book): Result<Unit> = runCatching {
+        supabase.postgrest["books"]
+            .update(book) { filter { eq("id", book.id)}  }
+    }
+
+    suspend fun deleteBook(id: String): Result<Unit> = runCatching {
+        supabase.postgrest["books"]
+            .delete { filter { eq("id", id) } }
+    }
+
+    suspend fun searchBooks(
+        query: String,
+        limit: Int = 20,
+        offset: Int = 0
+    ): Result<List<Book>> {
+
+
+        val trimmed = query.trim()
+        if (trimmed.isBlank()) return Result.success(emptyList())
+
+        return runCatching {
+            supabase.postgrest["books"]
+                .select {
+                    filter {
+                        or {
+                            ilike("title", "%$trimmed%")
+                            ilike("author", "%$trimmed%")
+                            ilike("isbn", "%$trimmed%")
+                            ilike("category", "%$trimmed%")
+                        }
+                    }
+                    limit(limit.toLong())
+                    range(offset.toLong(), (offset + limit - 1).toLong())
+                }
+                .decodeList<Book>()
+        }
+    }
+ }
