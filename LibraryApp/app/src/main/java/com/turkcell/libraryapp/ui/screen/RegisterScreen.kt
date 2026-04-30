@@ -20,15 +20,21 @@ import com.turkcell.libraryapp.ui.viewmodel.AuthViewModel
 @Composable
 fun RegisterScreen(
     onNavigateToLogin: () -> Unit,
+    onRegisterSuccess: (role: String) -> Unit,
     authViewModel: AuthViewModel
 ) {
-    val authViewModel: AuthViewModel = viewModel() // Navigasyon ekranına taşı.
     val authState by authViewModel.authState.collectAsState()
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var fullName by remember { mutableStateOf("") }
     var studentNo by remember { mutableStateOf("") }
 
+    LaunchedEffect(authState) {
+        if (authState is AuthState.Success) {
+            onRegisterSuccess((authState as AuthState.Success).role)
+            authViewModel.resetState()
+        }
+    }
 
     Column(
         modifier = Modifier
@@ -117,7 +123,7 @@ fun RegisterScreen(
         }
         Spacer(modifier = Modifier.height(12.dp))
 
-        TextButton(onClick = {}) {
+        TextButton(onClick = { onNavigateToLogin() }) {
             Text("Zaten hesabın var mı? Giriş Yap")
         }
     }
